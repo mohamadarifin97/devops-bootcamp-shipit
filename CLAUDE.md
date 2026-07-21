@@ -111,9 +111,11 @@ Content-Type: application/json
   This ties the token + report to the actual deploy — a reported ship that never went live stays
   neutral. A fresh deploy can 404 for ~1 min; the periodic re-check flips it green when the site
   actually comes up. Non-200/timeout = "not live yet," never an error.
-- **The script's `curl` deliberately has NO `-f` flag** (pinned in `report.sh`'s header too): on a
-  401 the step stays green and the run log prints `{"error":"unauthorized"}` — CI/CD 3 Amali 3
-  (wrong-token proof) depends on exactly this. Do not "harden" it to `-fsS`.
+- **The script's `curl` uses `--fail-with-body`** (pinned in `report.sh`'s header too): on a 401
+  the step **fails** (non-zero exit → red run) AND the run log prints `{"error":"unauthorized"}`,
+  so the wrong-token demo shows both the red X and the reason. Changed 2026-07-20 (was: no `-f`,
+  stay-green — the shape CI/CD 3 Amali 3 was delivered with). Plain `-f` would swallow the
+  response body — don't switch to it.
 
 - `$BOARD_URL` is a **public** repo/environment **variable**.
 - `$SHIPIT_TOKEN` is the **secret** taught in CI/CD 3 — a ship with no/late token can't report to
