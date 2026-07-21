@@ -14,9 +14,10 @@
 # pinned. The board probes that URL and only shows the ship LIVE (green) when the
 # real Pages site answers 200 (issue #21). Omitted when run outside Actions.
 #
-# curl has NO -f on purpose: a rejected report (401) must keep the step green
-# and print {"error":"unauthorized"} in the run log — CI/CD 3 Amali 3 depends
-# on exactly that. Do not "harden" this to -fsS.
+# curl uses --fail-with-body on purpose: a rejected report (401) must FAIL the
+# step (non-zero exit -> red run) while still printing {"error":"unauthorized"}
+# in the run log, so the wrong-token demo shows both the red X and the reason.
+# Plain -f would fail but swallow the response body — don't switch to it.
 set -euo pipefail
 
 : "${BOARD_URL:?BOARD_URL not set — register it as a repository variable}"
@@ -49,7 +50,7 @@ BODY="$(node -e '
   }));
 ' "$DIR/../ship.config.json" "${1:-liftoff}" "${2:-shipped}")"
 
-curl -sS -X POST "$BOARD_URL/api/event" \
+curl -sS --fail-with-body -X POST "$BOARD_URL/api/event" \
   -H "Authorization: Bearer $SHIPIT_TOKEN" \
   -H "Content-Type: application/json" \
   -d "$BODY"
